@@ -26,4 +26,131 @@ output application/json
 		<logger level="INFO" doc:name="End of the flow" doc:id="b9b2efe7-2c5f-41b6-80fc-7eac067d35e2" message="#[payload]" />
 		<logger level="INFO" doc:name="Logger" doc:id="62b31c33-7ffb-4350-b7f0-4913dee0458e" />
 	</sub-flow>
+	
+	<sub-flow name="onboarding-create-Sub_Flow" doc:id="1628cb19-b7f0-44ee-92dc-7c434f8cb866" >
+		<logger level="INFO" doc:name="Start of the flow" doc:id="13a36209-acf9-44ae-aefe-be9b858e28d8" message="#[payload]"/>
+		<!-- [STUDIO:"validate SSN"]<flow-ref doc:name="validate SSN" doc:id="156304f6-861d-4bb4-8a65-f676b11d51da" /> [STUDIO] -->
+		<ee:transform doc:name="requestPayload to AzureMicroServices" doc:id="7b5f9c13-2898-4e23-9d05-34ef74768dc3" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+
+
+fun splitPartyName(partyName) = do {
+    var parts = partyName splitBy " "
+    ---
+    {
+        firstName: parts[0] default "",
+        lastName:  (parts[1 to -1] joinBy " ") default ""
+    }
+}
+
+fun buildBackendAddress(partyAddress) = {
+    street: partyAddress.addressLine1,
+    city:   partyAddress.addressCityName,
+    state:  partyAddress.addressStateProvince,
+    zip:    partyAddress.addressPostalCode
+}
+
+
+fun buildProfileAddress(addr, involvementType) = {
+    "type":        if (involvementType == "EDUCATION") "school" else "employment",
+    addressLine: addr.addressLine1,
+    city:        addr.addressCityName,
+    state:       addr.addressStateProvince,
+    postalCode:  addr.addressPostalCode,
+    country:     addr.addressCountryCode
+}
+
+
+fun buildUSCitizenCitizenship(partyIdentification) = {
+    status:     "us_citizen",
+    ssnOrItin:  partyIdentification.partyIdentificationRecord.partyIdentificationValue
+}
+
+
+fun buildNonUSCitizenship(partyIdentification) = {
+    status:     "non_us",
+   
+    ssnOrItin:
+        if (partyIdentification.partyTaxIdentificationRecord == null) null
+        else partyIdentification.partyTaxIdentificationRecord.partyIdentificationValue,
+    passport: {
+        number:         partyIdentification.partyIdentificationRecord.partyIdentificationValue,
+        country:        partyIdentification.partyIdentificationRecord.partyIdentificationIssuingCountry,
+        issuanceDate:   partyIdentification.partyIdentificationRecord.partyIdentificationIssueDate,
+        expirationDate: partyIdentification.partyIdentificationRecord.partyIdentificationExpiryDate
+    },
+    visa: {
+        'type':       partyIdentification.partyVisaRecord.partyVisaType,
+        number:     partyIdentification.partyVisaRecord.partyVisaNumber,
+        issueDate:  partyIdentification.partyVisaRecord.partyVisaIssueDate,
+        expiryDate: partyIdentification.partyVisaRecord.partyVisaExpiryDate
+    },
+    otherGovernmentIds:
+        (partyIdentification.otherPartyIdentificationRecords default []) map (rec) -> {
+            idType:  rec.partyIdentificationType,
+            idValue: rec.partyIdentificationValue
+        }
+}
+
+
+fun buildAdditionalProfiles(partyInvolvement) =
+    (partyInvolvement default []) map (involvement) ->
+        if (involvement.partyInvolvementType == "EDUCATION")
+           
+            {
+                profileType:        "student",
+                universityName:     involvement.partyInvolvementRecord.institutionName,
+                studentId:          involvement.partyInvolvementRecord.institutionStudentReference,
+                i20Number:          involvement.partyInvolvementRecord.studentVisaDocumentReference default "",
+                expectedGraduation: involvement.partyInvolvementRecord.partyInvolvementEndDate,
+                addresses: (involvement.partyInvolvementRecord.partyInvolvementAddress default [])
+                    map (addr) -> buildProfileAddress(addr, "EDUCATION")
+            }
+        else
+           
+            {
+                profileType:      "employment",
+                organizationName: involvement.partyInvolvementRecord.institutionName,
+                h1bOrEadNumber:   involvement.partyInvolvementRecord.employmentVisaDocumentReference default "",
+                employmentStart:  involvement.partyInvolvementRecord.partyInvolvementStartDate,
+                addresses: (involvement.partyInvolvementRecord.partyInvolvementAddress default [])
+                    map (addr) -> buildProfileAddress(addr, "EMPLOYMENT")
+            }
+
+
+var nameparts = splitPartyName(payload.partyRecord.partyName)
+---
+{
+    
+    caseId: payload.onboardingCaseReference,
+
+    
+    customer: {
+        firstName:   nameparts.firstName,
+        lastName:    nameparts.lastName,
+        email:       payload.partyRecord.partyContactDetails.partyContactEmailAddress default null,
+        phone:       payload.partyRecord.partyContactDetails.partyContactPhone default null,
+        dateOfBirth: payload.partyRecord.partyDateOfBirth,
+        country:     payload.partyRecord.partyNationality,
+        address:     buildBackendAddress(payload.partyRecord.partyAddress)
+    },
+
+    
+    citizenship:
+        if (payload.partyIdentification.partyLegalStatus == "us_citizen")
+            buildUSCitizenCitizenship(payload.partyIdentification)
+        else
+            buildNonUSCitizenship(payload.partyIdentification),
+
+   
+    additionalProfiles: buildAdditionalProfiles(payload.partyInvolvement)
+}
+]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<!-- [STUDIO:"call to Microservices"]<flow-ref doc:name="call to Microservices" doc:id="ffb3127a-b543-4dcc-8373-11202b53715d" name="commonflowTo-PAPI-Sub_Flow"/> [STUDIO] -->
+		<logger level="INFO" doc:name="End of the flow" doc:id="aa2b7728-7565-43d0-84ce-32a8088bd791" message="#[payload]" />
+	</sub-flow>
 </mule>

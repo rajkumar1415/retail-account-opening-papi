@@ -9,4 +9,9 @@ http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/htt
 		<http:request doc:name="call to AZM" doc:id="0c073be3-fef3-48fd-832d-4d0c2195795d" method="POST" url="http://13.201.40.80:8080/api/v1/onboarding/retail"/>
 		<logger level="INFO" doc:name="After calling AMS" doc:id="8406fc95-5f0a-499a-9c93-ce720ef81345" message="#[payload]" />
 	</sub-flow>
+		<sub-flow name="validate-SSN-Sub_Flow" doc:id="8d562323-f5d9-4b45-bc0f-103f345d7a90" >
+		<logger level="INFO" doc:name="Before calling AMS" doc:id="10a07b0b-bc25-4acd-885e-5b71dc2b929c" message="#[payload]"/>
+		<http:request doc:name="call to AZM" doc:id="922de97b-ea18-4d5a-a6ae-27b3a366e955" method="POST" url="http://13.201.40.80:8080/api/v1/onboarding/retail"/>
+		<logger level="INFO" doc:name="After calling AMS" doc:id="c6b81d6a-70f6-4ccc-8f3c-77b3cff50036" message="#[payload]" />
+	</sub-flow>
 </mule>
