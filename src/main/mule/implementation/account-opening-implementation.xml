@@ -21,6 +21,16 @@ output application/json
   "fullName" : payload.fullName
 }]]></ee:set-payload>
 			</ee:message>
+			<ee:variables >
+				<ee:set-variable variableName="endpoint" ><![CDATA[%dw 2.0
+output application/java
+---
+{
+	"method": "POST",
+	"path": p('AzureMicroServices.retail')
+	
+	}]]></ee:set-variable>
+			</ee:variables>
 		</ee:transform>
 		<flow-ref doc:name="call to Microservices" doc:id="39b94c50-37c8-486d-b38b-173a3289b091" name="commonflowTo-PAPI-Sub_Flow"/>
 		<logger level="INFO" doc:name="End of the flow" doc:id="b9b2efe7-2c5f-41b6-80fc-7eac067d35e2" message="#[payload]" />
@@ -29,7 +39,6 @@ output application/json
 	
 	<sub-flow name="onboarding-create-Sub_Flow" doc:id="1628cb19-b7f0-44ee-92dc-7c434f8cb866" >
 		<logger level="INFO" doc:name="Start of the flow" doc:id="13a36209-acf9-44ae-aefe-be9b858e28d8" message="#[payload]"/>
-		<!-- [STUDIO:"validate SSN"]<flow-ref doc:name="validate SSN" doc:id="156304f6-861d-4bb4-8a65-f676b11d51da" /> [STUDIO] -->
 		<ee:transform doc:name="requestPayload to AzureMicroServices" doc:id="7b5f9c13-2898-4e23-9d05-34ef74768dc3" >
 			<ee:message >
 				<ee:set-payload ><![CDATA[%dw 2.0
@@ -149,8 +158,49 @@ var nameparts = splitPartyName(payload.partyRecord.partyName)
 }
 ]]></ee:set-payload>
 			</ee:message>
+			<ee:variables >
+				<ee:set-variable variableName="endpoint" ><![CDATA[%dw 2.0
+output application/java
+---
+{
+	"method": "POST",
+	"path": p('AzureMicroServices.customer')
+	
+	}]]></ee:set-variable>
+			</ee:variables>
 		</ee:transform>
-		<!-- [STUDIO:"call to Microservices"]<flow-ref doc:name="call to Microservices" doc:id="ffb3127a-b543-4dcc-8373-11202b53715d" name="commonflowTo-PAPI-Sub_Flow"/> [STUDIO] -->
+		<flow-ref doc:name="call to Microservices" doc:id="ffb3127a-b543-4dcc-8373-11202b53715d" name="commonflowTo-PAPI-Sub_Flow" target="microserviceResponse"/>
+		<ee:transform doc:name="Transform Message" doc:id="a0e2fea0-78b9-4ebb-8821-431cb6b3e9f1" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+  "caseId": vars.microserviceResponse.caseId default null,
+  "status": "IN_PROGRESS",
+  "customerId" : vars.microserviceResponse.customerId default null
+}]]></ee:set-payload>
+			</ee:message>
+			<ee:variables >
+				<ee:set-variable variableName="endpoint" ><![CDATA[%dw 2.0
+output application/java
+---
+{
+	"method": "PATCH",
+	"path": p('AzureMicroServices.status')
+	
+	}]]></ee:set-variable>
+			</ee:variables>
+		</ee:transform>
+		<flow-ref doc:name="call to Status Update" doc:id="156304f6-861d-4bb4-8a65-f676b11d51da" name="commonflowTo-PAPI-Sub_Flow"/>
+		<ee:transform doc:name="Transform Message" doc:id="ede11361-66d5-458b-99d1-190c4015a746" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+vars.microserviceResponse]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
 		<logger level="INFO" doc:name="End of the flow" doc:id="aa2b7728-7565-43d0-84ce-32a8088bd791" message="#[payload]" />
 	</sub-flow>
 </mule>
