@@ -24,5 +24,6 @@ output application/json
 		</ee:transform>
 		<flow-ref doc:name="call to Microservices" doc:id="39b94c50-37c8-486d-b38b-173a3289b091" name="commonflowTo-PAPI-Sub_Flow"/>
 		<logger level="INFO" doc:name="End of the flow" doc:id="b9b2efe7-2c5f-41b6-80fc-7eac067d35e2" message="#[payload]" />
+		<logger level="INFO" doc:name="Logger" doc:id="62b31c33-7ffb-4350-b7f0-4913dee0458e" />
 	</sub-flow>
 </mule>
