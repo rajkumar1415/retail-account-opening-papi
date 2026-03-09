@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<sub-flow name="onboarding-cases-Sub_Flow" doc:id="61acbdf2-0683-4682-8675-9fb601ec2489" >
+		<logger level="INFO" doc:name="Start of the flow" doc:id="df6d0d5d-9d85-4dae-88c5-301bf3344954" message="#[payload]"/>
+		<ee:transform doc:name="requestPayload to AzureMicroServices" doc:id="4710221a-8d5b-42a0-afcb-0777799e4d4b" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+  "customerOnboardingChannel": payload.customerOnboardingChannel,
+  "productServiceType": payload.productServiceType,
+  "customerOnboardingSchedule": "Standard",
+  "prospectType": "INDIVIDUAL",
+  "email" : payload.email,
+  "phoneNumber" : payload.phoneNumber,
+  "fullName" : payload.fullName
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<flow-ref doc:name="call to Microservices" doc:id="39b94c50-37c8-486d-b38b-173a3289b091" name="commonflowTo-PAPI-Sub_Flow"/>
+		<logger level="INFO" doc:name="End of the flow" doc:id="b9b2efe7-2c5f-41b6-80fc-7eac067d35e2" message="#[payload]" />
+	</sub-flow>
+</mule>

@@ -1,0 +1,617 @@
+openapi: 3.0.0
+info:
+  title: Customer Onboarding API
+  version: 1.0.0
+
+
+paths:
+
+  /onboarding-cases:
+    post:
+      summary: Create onboarding case
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OnboardingCaseRequest'
+      responses:
+        '201':
+          description: Case created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OnboardingCaseResponse'
+
+  /party-reference-data-directory/parties:
+    post:
+      summary: Create party
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PartyRequest'
+      responses:
+        '201':
+          description: Party created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PartyResponse'
+
+  /onboarding-cases/{onboardingCaseId}/customer:
+    put:
+      summary: Link customer
+      parameters:
+        - name: onboardingCaseId
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: "^CASE-[0-9]{4,10}$"
+            example: CASE-1001
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LinkCustomerRequest'
+      responses:
+        '200':
+          description: Customer linked
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LinkCustomerResponse'
+
+  /product-directory/current-accounts/{productId}/eligibility-checks:
+    post:
+      summary: Check eligibility
+      parameters:
+        - name: productId
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: "^[A-Z0-9-]{3,30}$"
+            example: CHK-PREMIUM
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EligibilityCheckRequest"
+      responses:
+        '200':
+          description: Eligibility result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EligibilityCheckResponse"
+
+  /party-screening/kyc-cases:
+    post:
+      summary: Create KYC case
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/KycCaseRequest"
+      responses:
+        '201':
+          description: KYC case created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/KycCaseResponse"
+
+  /document-services/onboarding-packs:
+    post:
+      summary: Create onboarding document pack
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DocumentPackRequest"
+      responses:
+        '201':
+          description: Document pack created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DocumentPackResponse"
+
+  /document-services/documents/{documentId}/signatures:
+    post:
+      summary: Sign document
+      parameters:
+        - name: documentId
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: "^DOC-[0-9]{1,10}$"
+            example: DOC-1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DocumentSignatureRequest"
+      responses:
+        '200':
+          description: Document signed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DocumentSignatureResponse"
+
+  /onboarding-cases/{onboardingCaseId}/approvals:
+    post:
+      summary: Approve onboarding case
+      parameters:
+        - name: onboardingCaseId
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: "^CASE-[0-9]{4,10}$"
+            example: CASE-1001
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ApprovalRequest"
+      responses:
+        '200':
+          description: Case approved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApprovalResponse"
+
+  /current-account/current-accounts:
+    post:
+      summary: Create current account
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateAccountRequest"
+      responses:
+        '201':
+          description: Account created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CreateAccountResponse"
+
+components:
+  schemas:
+
+    OnboardingCaseRequest:
+      type: object
+      required:
+        - customerOnboardingChannel
+        - productServiceType
+        - customerOnboardingSchedule
+        - prospectType
+        - fullName
+      properties:
+        customerOnboardingChannel:
+          type: string
+          enum: [MOBILE, WEB, BRANCH]
+          example: MOBILE
+        productServiceType:
+          type: string
+          enum: [RETAIL_CURRENT_ACCOUNT, SAVINGS_ACCOUNT, CHECKING_ACCOUNT]
+          example: RETAIL_CURRENT_ACCOUNT
+        customerOnboardingSchedule:
+          type: string
+          enum: [Standard, Express]
+          example: Standard
+        prospectType:
+          type: string
+          enum: [INDIVIDUAL, BUSINESS]
+          example: INDIVIDUAL
+        fullName:
+          type: string
+          minLength: 2
+          maxLength: 100
+          pattern: '^[A-Za-z]{1,50}(?:[ ''-][A-Za-z]{1,50})*$'
+          example: "John A Deo"
+        email:
+          type: string
+          format: email
+          pattern: '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$'
+          example: john.doe@email.com
+        phone:
+          type: string
+          description: US phone number in E.164 format (+1XXXXXXXXXX)
+          pattern: '^\+1[2-9]\d{2}[2-9]\d{6}$'
+          minLength: 12
+          maxLength: 12
+          example: "+14085551234"
+      anyOf:
+        - required: [email]
+        - required: [phone]
+
+    OnboardingCaseResponse:
+      type: object
+      properties:
+        onboardingCaseId:
+          type: string
+          pattern: "^CASE-[0-9]{4,10}$"
+          example: CASE-1001
+        caseStatus:
+          type: string
+          enum: [INITIATED, CUSTOMER_LINKED, COMPLETED]
+          example: INITIATED
+
+    PartyRequest:
+      type: object
+      required:
+        - partyName
+        - partyType
+        - partyDateTime
+        - partyDateOfBirth
+        - partyIdentification
+      properties:
+        partyName:
+          type: string
+          minLength: 3
+          maxLength: 100
+          pattern: "^[A-Za-z ]{3,100}$"
+          example: John Doe
+        partyType:
+          type: string
+          enum: [Individual, Organization]
+          example: Individual
+        partyDateTime:
+          type: string
+          format: date-time
+          example: "2026-02-28T17:30:00Z"
+        partyDateOfBirth:
+          type: string
+          format: date
+          example: "1990-01-15"
+        partyIdentification:
+          type: object
+          required:
+            - partyIdentificationType
+            - partyIdentificationValue
+          properties:
+            partyIdentificationType:
+              type: string
+              enum: [SSN, PASSPORT]
+              example: SSN
+            partyIdentificationValue:
+              type: string
+              pattern: "^[0-9A-Za-z-]{5,20}$"
+              example: "123-45-6789"
+        partyContactDetails:
+          type: object
+          properties:
+            email:
+              type: string
+              format: email
+              example: john.doe@email.com
+            phone:
+              type: string
+              pattern: "^[0-9+]{10,15}$"
+              example: "+15551234567"
+        partyAddress:
+          type: object
+          properties:
+            addressLine1:
+              type: string
+              minLength: 5
+              example: 123 Main St
+            city:
+              type: string
+              pattern: "^[A-Za-z ]{2,50}$"
+              example: Ashburn
+            stateProvince:
+              type: string
+              pattern: "^[A-Z]{2}$"
+              example: VA
+            postalCode:
+              type: string
+              pattern: "^[0-9]{5,10}$"
+              example: "20147"
+            countryCode:
+              type: string
+              pattern: "^[A-Z]{2}$"
+              example: US
+
+    PartyResponse:
+      type: object
+      properties:
+        partyId:
+          type: string
+          pattern: "^CUST-[0-9]{3,10}$"
+          example: CUST-201
+        status:
+          type: string
+          enum: [ACTIVE, INACTIVE]
+          example: ACTIVE
+
+    LinkCustomerRequest:
+      type: object
+      required:
+        - partyReference
+        - partyRole
+      properties:
+        partyReference:
+          type: string
+          pattern: "^PARTY-[0-9]{3,10}$"
+          example: PARTY-789
+        partyRole:
+          type: string
+          enum: [PrimaryAccountHolder, JointAccountHolder]
+          example: PrimaryAccountHolder
+        leadId:
+          type: string
+          pattern: "^LEAD-[0-9A-Za-z-]{5,20}$"
+          example: LEAD-2026-789
+
+    LinkCustomerResponse:
+      type: object
+      properties:
+        onboardingCaseId:
+          type: string
+          pattern: "^CASE-[0-9]{4,10}$"
+          example: CASE-1001
+        status:
+          type: string
+          enum: [CUSTOMER_LINKED, FAILED]
+          example: CUSTOMER_LINKED
+
+    EligibilityCheckRequest:
+      type: object
+      required: [partyReference, eligibilityCriteria]
+      properties:
+        partyReference:
+          type: string
+          pattern: "^PARTY-[0-9]{3,10}$"
+          example: PARTY-789
+        eligibilityCriteria:
+          type: object
+          required: [income, residencyStatus, employmentStatus, ageVerified]
+          properties:
+            income:
+              type: number
+              minimum: 0
+              example: 50000
+            residencyStatus:
+              type: string
+              enum: [Resident, NonResident]
+              example: Resident
+            employmentStatus:
+              type: string
+              enum: [Employed, SelfEmployed, Unemployed]
+              example: Employed
+            ageVerified:
+              type: boolean
+              example: true
+
+    EligibilityCheckResponse:
+      type: object
+      properties:
+        eligibilityStatus:
+          type: string
+          enum: [ELIGIBLE, NOT_ELIGIBLE]
+          example: ELIGIBLE
+
+    KycCaseRequest:
+      type: object
+      required:
+        - partyScreeningProcedureReference
+        - partyReference
+        - partyScreeningType
+      properties:
+        partyScreeningProcedureReference:
+          type: string
+          pattern: "^KYC-PROC-[A-Z]{3}-[0-9]{3}$"
+          example: KYC-PROC-STD-001
+        partyReference:
+          type: string
+          pattern: "^PARTY-[0-9]{3,10}$"
+          example: PARTY-789
+        partyScreeningType:
+          type: string
+          enum: [KYC_AML, SANCTIONS]
+          example: KYC_AML
+        partyScreeningCriteria:
+          type: object
+          properties:
+            screeningLevel:
+              type: string
+              enum: [Standard, Enhanced]
+              example: Standard
+            countryCode:
+              type: string
+              pattern: "^[A-Z]{2}$"
+              example: US
+
+    KycCaseResponse:
+      type: object
+      properties:
+        kycCaseId:
+          type: string
+          pattern: "^KYC-[0-9]{3,10}$"
+          example: KYC-3001
+        status:
+          type: string
+          enum: [UNDER_REVIEW, APPROVED, REJECTED]
+          example: UNDER_REVIEW
+
+    DocumentPackRequest:
+      type: object
+      required: [onboardingCaseReference, documentTypes]
+      properties:
+        onboardingCaseReference:
+          type: string
+          pattern: "^ONB-[0-9]{4}-[0-9]{6}$"
+          example: ONB-2026-000123
+        documentTypes:
+          type: array
+          minItems: 1
+          items:
+            type: string
+            enum: [TermsAndConditions, AccountAgreement, PrivacyNotice]
+          example:
+            - TermsAndConditions
+            - AccountAgreement
+            - PrivacyNotice
+
+    DocumentPackResponse:
+      type: object
+      properties:
+        documentPackId:
+          type: string
+          pattern: "^DOC-PACK-[0-9]{1,10}$"
+          example: DOC-PACK-101
+        documents:
+          type: array
+          items:
+            type: object
+            properties:
+              documentId:
+                type: string
+                pattern: "^DOC-[0-9]{1,10}$"
+                example: DOC-1
+
+    DocumentSignatureRequest:
+      type: object
+      required:
+        - signatureMethod
+        - signedByPartyReference
+        - signatureTimestamp
+        - signatureConsent
+      properties:
+        signatureMethod:
+          type: string
+          enum: [ESign, WetSignature]
+          example: ESign
+        signedByPartyReference:
+          type: string
+          pattern: "^PARTY-[0-9]{3,10}$"
+          example: PARTY-789
+        signatureTimestamp:
+          type: string
+          format: date-time
+          example: "2026-02-28T17:40:00Z"
+        signatureConsent:
+          type: boolean
+          example: true
+
+    DocumentSignatureResponse:
+      type: object
+      properties:
+        documentStatus:
+          type: string
+          enum: [SIGNED, PENDING]
+          example: SIGNED
+
+    ApprovalRequest:
+      type: object
+      required:
+        - approvalDecision
+        - approvedByReference
+      properties:
+        approvalDecision:
+          type: string
+          enum: [Approved, Rejected]
+          example: Approved
+        approvalReason:
+          type: string
+          minLength: 5
+          maxLength: 200
+          example: All checks passed
+        approvedByReference:
+          type: string
+          pattern: "^[A-Z-]{3,30}$"
+          example: SYSTEM-AUTO
+
+    ApprovalResponse:
+      type: object
+      properties:
+        onboardingCaseId:
+          type: string
+          pattern: "^CASE-[0-9]{4,10}$"
+          example: CASE-1001
+        caseStatus:
+          type: string
+          enum: [APPROVED, REJECTED]
+          example: APPROVED
+
+    CreateAccountRequest:
+      type: object
+      required:
+        - currentAccountFacilityReference
+        - partyReference
+        - productReference
+        - accountCurrency
+        - modeOfAccount
+        - accountStatus
+        - onboardingCaseReference
+      properties:
+        currentAccountFacilityReference:
+          type: string
+          pattern: "^CAF-[A-Z]{3}-[0-9]{3}$"
+          example: CAF-GEN-001
+        partyReference:
+          type: string
+          pattern: "^PARTY-[0-9]{3,10}$"
+          example: PARTY-789
+        productReference:
+          type: string
+          pattern: "^[A-Z0-9-]{3,30}$"
+          example: CHK-PREMIUM
+        accountCurrency:
+          type: string
+          pattern: "^[A-Z]{3}$"
+          example: USD
+        modeOfAccount:
+          type: string
+          enum: [Single, Joint]
+          example: Single
+        accountStatus:
+          type: string
+          enum: [PENDING_ACTIVATION, ACTIVE, CLOSED]
+          example: PENDING_ACTIVATION
+        currentAccountFacilityTerms:
+          type: object
+          properties:
+            initialDeposit:
+              type: number
+              minimum: 0
+              example: 100
+            overdraftFacility:
+              type: boolean
+              example: true
+            debitCardRequested:
+              type: boolean
+              example: true
+        onboardingCaseReference:
+          type: string
+          pattern: "^ONB-[0-9]{4}-[0-9]{6}$"
+          example: ONB-2026-000123
+
+    CreateAccountResponse:
+      type: object
+      properties:
+        currentAccountId:
+          type: string
+          pattern: "^ACC-[0-9]{3,10}$"
+          example: ACC-9001
+        accountStatus:
+          type: string
+          enum: [ACTIVE, PENDING_ACTIVATION]
+          example: ACTIVE
